@@ -51,3 +51,8 @@ def webhook(webhook_id):
     result = supabase.table("webhook_messages").select("*").eq("webhook_id", webhook_id).execute()
     messages = result.data if result.data else []
     return render_template("webhook.html", messages=messages)
+
+if __name__ == '__main__':
+    import os
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=False, host="0.0.0.0", port=port)
