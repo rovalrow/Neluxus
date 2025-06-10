@@ -9,6 +9,10 @@ SUPABASE_URL = "https://ikxxvgflnpfyncnaqfxx.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlreHh2Z2ZsbnBmeW5jbmFxZnh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYxOTE3NTMsImV4cCI6MjA2MTc2Nzc1M30.YiF46ggItUYuKLfdD_6oOxq2xGX7ac6yqqtEGeM_dg8"
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+@app.route('/')
+def root_route():
+    return render_template("webhook.html")
+    
 @app.route('/generate')
 def generate_webhook():
     existing = supabase.table("temp_webhooks").select("*").execute().data
