@@ -318,155 +318,138 @@
     }
   </style>
   <script>
-    document.addEventListener("DOMContentLoaded", async () => {
-      await Notification.requestPermission();
-      
-      const notify = (text) => {
-        if (
-          Notification.permission === "granted" &&
-          (
-            text.includes("@everyone") ||
-            text.includes("--@everyone") ||
-            text.includes("-- @everyone")
-          )
-        ) {
-          new Notification("WEBHOOK NOTIFIED", {
-            body: text.slice(0, 150),
-            silent: false
-          });
-          document.title = "[!] Webhook Feed";
-          
-          // Show notification indicator
-          const indicator = document.querySelector('.notification-indicator');
-          if (indicator) {
-            indicator.style.display = 'block';
-            setTimeout(() => {
-              indicator.style.display = 'none';
-            }, 5000);
-          }
-        }
-      };
-      
-      // Function to format message with Discord-like structure
-      const formatMessage = (messageText) => {
-        const now = new Date();
-        const timestamp = now.toLocaleString('en-US', {
-          month: 'numeric',
-          day: 'numeric',
-          year: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true
+<script>
+  document.addEventListener("DOMContentLoaded", async () => {
+    await Notification.requestPermission();
+
+    const notify = (text) => {
+      if (
+        Notification.permission === "granted" &&
+        (
+          text.includes("@everyone") ||
+          text.includes("--@everyone") ||
+          text.includes("-- @everyone")
+        )
+      ) {
+        new Notification("WEBHOOK NOTIFIED", {
+          body: text.slice(0, 150),
+          silent: false
         });
-        
-        // Highlight @everyone mentions
-        let formattedText = messageText.replace(
-          /@everyone|--@everyone|-- @everyone/g, 
-          '<span class="mention">@everyone</span>'
-        );
-        
-        // Enhanced emoji detection and formatting
-        const emojiRegex = /(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/gu;
-        const emojis = formattedText.match(emojiRegex) || [];
-        
-        // Check if message is emoji-only (3 or fewer emojis with minimal text)
-        const textWithoutEmojis = formattedText.replace(emojiRegex, '').trim();
-        const isEmojiOnly = emojis.length <= 3 && textWithoutEmojis.length <= 5;
-        
-        if (isEmojiOnly && emojis.length > 0) {
-          // Large emoji format for emoji-only messages
-          formattedText = formattedText.replace(emojiRegex, '<span class="emoji-large">$1</span>');
-        } else {
-          // Regular emoji format for mixed messages
-          formattedText = formattedText.replace(emojiRegex, '<span class="emoji">$1</span>');
+        document.title = "[!] Webhook Feed";
+
+        const indicator = document.querySelector('.notification-indicator');
+        if (indicator) {
+          indicator.style.display = 'block';
+          setTimeout(() => {
+            indicator.style.display = 'none';
+          }, 5000);
         }
-        
-        return `<div class="message-avatar">W</div>
-        <div class="message-content">
-          <div class="message-header">
-            <span class="message-author">Webhook</span>
-            <span class="message-timestamp">Today at ${timestamp}</span>
-          </div>
-          <div class="message-text">${formattedText}</div>
-        </div>`;
-      };
-      
-      // Function to prepend new message to container
-      const prependMessage = (messageElement) => {
-        const container = document.querySelector('.messages-container');
-        container.insertBefore(messageElement, container.firstChild);
-      };
-      
-      // Initial notification for existing messages
-      document.querySelectorAll(".message").forEach((msg, index) => {
-        const originalText = msg.textContent;
-        msg.innerHTML = formatMessage(originalText);
-        notify(originalText);
+      }
+    };
+
+    const formatMessage = (messageText) => {
+      const now = new Date();
+      const timestamp = now.toLocaleString('en-US', {
+        month: 'numeric',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
       });
-      
-      // MutationObserver for new messages
-      const observer = new MutationObserver(mutations => {
-        for (const mutation of mutations) {
-          for (const node of mutation.addedNodes) {
-            if (node.classList && node.classList.contains("message")) {
-              const originalText = node.textContent;
-              
-              // Remove the node from its current position
-              node.remove();
-              
-              // Create new message element
-              const newMessage = document.createElement('div');
-              newMessage.className = 'message message-enter';
-              newMessage.innerHTML = formatMessage(originalText);
-              
-              // Prepend to container (add at top)
-              prependMessage(newMessage);
-              
-              notify(originalText);
-            }
+
+      let formattedText = messageText.replace(
+        /@everyone|--@everyone|-- @everyone/g,
+        '<span class="mention">@everyone</span>'
+      );
+
+      const emojiRegex = /(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/gu;
+      const emojis = formattedText.match(emojiRegex) || [];
+      const textWithoutEmojis = formattedText.replace(emojiRegex, '').trim();
+      const isEmojiOnly = emojis.length <= 3 && textWithoutEmojis.length <= 5;
+
+      if (isEmojiOnly && emojis.length > 0) {
+        formattedText = formattedText.replace(emojiRegex, '<span class="emoji-large">$1</span>');
+      } else {
+        formattedText = formattedText.replace(emojiRegex, '<span class="emoji">$1</span>');
+      }
+
+      return `<div class="message-avatar">W</div>
+      <div class="message-content">
+        <div class="message-header">
+          <span class="message-author">Webhook</span>
+          <span class="message-timestamp">Today at ${timestamp}</span>
+        </div>
+        <div class="message-text">${formattedText}</div>
+      </div>`;
+    };
+
+    const prependMessage = (messageElement) => {
+      const container = document.querySelector('.messages-container');
+      container.insertBefore(messageElement, container.firstChild);
+    };
+
+    document.querySelectorAll(".message").forEach((msg) => {
+      const originalText = msg.textContent;
+      msg.innerHTML = formatMessage(originalText);
+      notify(originalText);
+    });
+
+    const observer = new MutationObserver(mutations => {
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (node.classList && node.classList.contains("message")) {
+            const originalText = node.textContent;
+            node.remove();
+
+            const newMessage = document.createElement('div');
+            newMessage.className = 'message message-enter';
+            newMessage.innerHTML = formatMessage(originalText);
+
+            prependMessage(newMessage);
+            notify(originalText);
           }
         }
-      });
-      observer.observe(document.querySelector('.messages-container'), { childList: true, subtree: true });
-      
-      // Webhook Generator Button
-      const generateBtn = document.getElementById("generateBtn");
-      if (generateBtn) {
-        generateBtn.addEventListener("click", async () => {
-          generateBtn.textContent = 'Generating...';
-          generateBtn.disabled = true;
-          
-          try {
-            const response = await fetch("/generate", { redirect: "follow" });
-            const finalUrl = response.url;
-            const output = document.getElementById("generatedWebhook");
-            const container = document.querySelector('.webhook-output');
-            
-            output.textContent = finalUrl;
-            container.style.display = "block";
-            
-            // Add copy functionality
-            output.addEventListener('click', () => {
-              navigator.clipboard.writeText(finalUrl).then(() => {
-                output.style.background = '#3ba55d';
-                output.style.borderColor = '#57f287';
-                setTimeout(() => {
-                  output.style.background = '#202225';
-                  output.style.borderColor = '#3c3f41';
-                }, 1000);
-              });
-            });
-            
-          } catch (err) {
-            alert("Failed to generate webhook.");
-          } finally {
-            generateBtn.textContent = 'Generate Temp Webhook';
-            generateBtn.disabled = false;
-          }
-        });
       }
     });
-  </script>
+    observer.observe(document.querySelector('.messages-container'), { childList: true, subtree: true });
+
+    const generateBtn = document.getElementById("generateBtn");
+    if (generateBtn) {
+      generateBtn.addEventListener("click", async () => {
+        generateBtn.textContent = 'Generating...';
+        generateBtn.disabled = true;
+
+        try {
+          const response = await fetch("/generate", { redirect: "follow" });
+          const finalUrl = response.url;
+          const output = document.getElementById("generatedWebhook");
+          const container = document.querySelector('.webhook-output');
+
+          output.textContent = finalUrl;
+          container.style.display = "block";
+
+          output.addEventListener('click', () => {
+            navigator.clipboard.writeText(finalUrl).then(() => {
+              output.style.background = '#3ba55d';
+              output.style.borderColor = '#57f287';
+              setTimeout(() => {
+                output.style.background = '#202225';
+                output.style.borderColor = '#3c3f41';
+              }, 1000);
+            });
+          });
+
+        } catch (err) {
+          alert("Failed to generate webhook.");
+        } finally {
+          generateBtn.textContent = 'Generate Temp Webhook';
+          generateBtn.disabled = false;
+        }
+      });
+    }
+  });
+</script>
 </head>
 <body>
   <div class="notification-indicator">New notification!</div>
