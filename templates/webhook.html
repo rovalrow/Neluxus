@@ -6,6 +6,7 @@
   <link rel="stylesheet" href="/static/style.css">
   <script>
     document.addEventListener("DOMContentLoaded", () => {
+      // Request notification permission and notify on "@everyone"
       Notification.requestPermission().then(permission => {
         if (permission === "granted") {
           document.querySelectorAll(".message").forEach(msg => {
@@ -15,11 +16,29 @@
           });
         }
       });
+
+      // Generate webhook when button clicked
+      document.getElementById("generateBtn").addEventListener("click", async () => {
+        try {
+          const response = await fetch("/generate", { redirect: "follow" });
+          const finalUrl = response.url;
+          document.getElementById("generatedWebhook").innerText = finalUrl;
+          document.getElementById("generatedWebhook").style.display = "block";
+        } catch (err) {
+          alert("Failed to generate webhook.");
+        }
+      });
     });
   </script>
 </head>
 <body>
   <h1>Webhook Feed</h1>
+
+  <!-- Generate Button -->
+  <button id="generateBtn">Generate Temp Webhook</button>
+  <div id="generatedWebhook" style="margin-top: 10px; display: none; font-weight: bold;"></div>
+
+  <!-- Webhook Messages -->
   {% for msg in messages %}
     <div class="message">{{ msg.message }}</div>
   {% endfor %}
