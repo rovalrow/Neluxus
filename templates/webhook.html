@@ -128,8 +128,8 @@
     }
 
     .message {
-      padding: 2px 16px 2px 72px;
-      margin: 0;
+      padding: 8px 16px 8px 72px;
+      margin: 4px 0;
       position: relative;
       min-height: 44px;
       display: flex;
@@ -142,7 +142,7 @@
       border: none;
       white-space: pre-wrap;
       line-height: 1.375;
-      font-size: 16px;
+      font-size: 14px;
       color: #dcddde;
     }
 
@@ -155,15 +155,15 @@
       position: absolute;
       left: 16px;
       top: 8px;
-      width: 40px;
-      height: 40px;
+      width: 32px;
+      height: 32px;
       background: linear-gradient(135deg, #5865f2, #7289da);
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 600;
-      font-size: 18px;
+      font-size: 14px;
       color: #ffffff;
     }
 
@@ -179,39 +179,48 @@
       position: absolute;
       left: 16px;
       top: 8px;
-      width: 40px;
-      height: 40px;
+      width: 32px;
+      height: 32px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 600;
-      font-size: 18px;
+      font-size: 14px;
       color: #ffffff;
       z-index: 1;
     }
 
     .message-content {
-      margin-top: 8px;
+      margin-top: 4px;
       flex: 1;
     }
 
     .message-header {
       display: flex;
       align-items: baseline;
-      margin-bottom: 4px;
+      margin-bottom: 8px;
     }
 
     .message-author {
       font-weight: 600;
       color: #ffffff;
-      font-size: 16px;
+      font-size: 14px;
       margin-right: 8px;
     }
 
     .message-timestamp {
-      font-size: 12px;
+      font-size: 11px;
       color: #a3a6aa;
       font-weight: 500;
+    }
+
+    .message-embed {
+      background: #2f3136;
+      border-left: 4px solid #5865f2;
+      border-radius: 4px;
+      padding: 12px 16px;
+      margin-top: 4px;
+      max-width: 520px;
     }
 
     .message-text {
@@ -219,6 +228,7 @@
       line-height: 1.375;
       white-space: pre-wrap;
       word-wrap: break-word;
+      font-size: 13px;
     }
 
     .message-text .emoji {
@@ -319,19 +329,24 @@
     /* Responsive */
     @media (max-width: 768px) {
       .message {
-        padding: 2px 8px 2px 56px;
+        padding: 8px 8px 8px 48px;
       }
       
       .message::before,
       .message::after {
         left: 8px;
-        width: 32px;
-        height: 32px;
-        font-size: 14px;
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
       }
       
       .channel-topic {
         display: none;
+      }
+      
+      .message-embed {
+        max-width: 100%;
+        padding: 10px 12px;
       }
     }
   </style>
@@ -403,7 +418,9 @@
           <span class="message-author">Webhook</span>
           <span class="message-timestamp">Today at ${timestamp}</span>
         </div>
-        <div class="message-text">${formattedText}</div>`;
+        <div class="message-embed">
+          <div class="message-text">${formattedText}</div>
+        </div>`;
       };
       
       // Function to prepend new message to container
