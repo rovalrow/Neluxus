@@ -2,45 +2,517 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Webhook Feed</title>
-  <link rel="stylesheet" href="/static/style.css">
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      // Request notification permission and notify on "@everyone"
-      Notification.requestPermission().then(permission => {
-        if (permission === "granted") {
-          document.querySelectorAll(".message").forEach(msg => {
-            if (msg.innerText.includes("@everyone")) {
-              new Notification("Ping!", { body: msg.innerText });
-            }
-          });
-        }
-      });
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-      // Generate webhook when button clicked
-      document.getElementById("generateBtn").addEventListener("click", async () => {
-        try {
-          const response = await fetch("/generate", { redirect: "follow" });
-          const finalUrl = response.url;
-          document.getElementById("generatedWebhook").innerText = finalUrl;
-          document.getElementById("generatedWebhook").style.display = "block";
-        } catch (err) {
-          alert("Failed to generate webhook.");
+    body {
+      font-family: 'Whitney', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      background: #36393f;
+      color: #dcddde;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .discord-header {
+      background: #2f3136;
+      border-bottom: 1px solid #202225;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 1px 0 rgba(4,4,5,0.2), 0 1.5px 0 rgba(6,6,7,0.05), 0 2px 0 rgba(4,4,5,0.05);
+      z-index: 1000;
+    }
+
+    .channel-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .channel-icon {
+      color: #8e9297;
+      font-size: 20px;
+    }
+
+    .channel-name {
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .channel-topic {
+      color: #b9bbbe;
+      font-size: 14px;
+      margin-left: 8px;
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    #generateBtn {
+      background: #5865f2;
+      border: none;
+      color: #ffffff;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: background-color 0.17s ease;
+      font-family: inherit;
+    }
+
+    #generateBtn:hover {
+      background: #4752c4;
+    }
+
+    #generateBtn:active {
+      background: #3c45a5;
+    }
+
+    #generateBtn:disabled {
+      background: #4f545c;
+      cursor: not-allowed;
+    }
+
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .webhook-output {
+      background: #2f3136;
+      border-bottom: 1px solid #202225;
+      padding: 12px 16px;
+      display: none;
+    }
+
+    #generatedWebhook {
+      background: #202225;
+      border: 1px solid #3c3f41;
+      border-radius: 3px;
+      padding: 8px 12px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 14px;
+      color: #dcddde;
+      word-break: break-all;
+      cursor: pointer;
+      transition: border-color 0.15s ease;
+    }
+
+    #generatedWebhook:hover {
+      border-color: #5865f2;
+    }
+
+    .messages-container {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .message {
+      padding: 2px 16px 2px 72px;
+      margin: 0;
+      position: relative;
+      min-height: 44px;
+      display: flex;
+      align-items: flex-start;
+      word-wrap: break-word;
+      user-select: text;
+      transition: background-color 0.1s ease-out;
+      border-radius: 0;
+      background: transparent;
+      border: none;
+      white-space: pre-wrap;
+      line-height: 1.375;
+      font-size: 16px;
+      color: #dcddde;
+    }
+
+    .message:hover {
+      background: rgba(4,4,5,0.07);
+    }
+
+    .message::before {
+      content: '';
+      position: absolute;
+      left: 16px;
+      top: 8px;
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #5865f2, #7289da);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 18px;
+      color: #ffffff;
+    }
+
+    .message:nth-child(1)::before { background: linear-gradient(135deg, #5865f2, #7289da); }
+    .message:nth-child(2)::before { background: linear-gradient(135deg, #57f287, #3ba55d); }
+    .message:nth-child(3)::before { background: linear-gradient(135deg, #faa61a, #f57c00); }
+    .message:nth-child(4)::before { background: linear-gradient(135deg, #ed4245, #c62828); }
+    .message:nth-child(5)::before { background: linear-gradient(135deg, #eb459e, #ad1457); }
+    .message:nth-child(6)::before { background: linear-gradient(135deg, #fee75c, #f9a825); }
+
+    .message::after {
+      content: 'W';
+      position: absolute;
+      left: 16px;
+      top: 8px;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 18px;
+      color: #ffffff;
+      z-index: 1;
+    }
+
+    .message-content {
+      margin-top: 8px;
+      flex: 1;
+    }
+
+    .message-header {
+      display: flex;
+      align-items: baseline;
+      margin-bottom: 4px;
+    }
+
+    .message-author {
+      font-weight: 600;
+      color: #ffffff;
+      font-size: 16px;
+      margin-right: 8px;
+    }
+
+    .message-timestamp {
+      font-size: 12px;
+      color: #a3a6aa;
+      font-weight: 500;
+    }
+
+    .message-text {
+      color: #dcddde;
+      line-height: 1.375;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .message-text .emoji {
+      font-size: 1.375em;
+      vertical-align: -0.2em;
+      margin: 0 0.05em 0 0.1em;
+    }
+
+    .message-text .emoji-large {
+      font-size: 3rem;
+      line-height: 1;
+      margin: 4px 2px;
+    }
+
+    /* Mention styling */
+    .mention {
+      background: rgba(88, 101, 242, 0.3);
+      color: #dee0fc;
+      padding: 0 2px;
+      border-radius: 3px;
+      font-weight: 500;
+    }
+
+    .notification-indicator {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #ed4245;
+      color: #ffffff;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      display: none;
+      z-index: 1001;
+      animation: slideInRight 0.3s ease;
+    }
+
+    @keyframes slideInRight {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .message-enter {
+      animation: messageSlideIn 0.3s ease;
+    }
+
+    @keyframes messageSlideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    /* Scrollbar styling */
+    .messages-container::-webkit-scrollbar {
+      width: 14px;
+    }
+
+    .messages-container::-webkit-scrollbar-corner {
+      background-color: transparent;
+    }
+
+    .messages-container::-webkit-scrollbar-thumb {
+      background-color: #202225;
+      border: 3px solid #36393f;
+      border-radius: 7px;
+    }
+
+    .messages-container::-webkit-scrollbar-thumb:hover {
+      background-color: #1a1d21;
+    }
+
+    .messages-container::-webkit-scrollbar-track {
+      background-color: transparent;
+    }
+
+    /* Footer */
+    .footer {
+      background: #2f3136;
+      border-top: 1px solid #202225;
+      padding: 12px 16px;
+      text-align: center;
+      font-size: 12px;
+      color: #72767d;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .message {
+        padding: 2px 8px 2px 56px;
+      }
+      
+      .message::before,
+      .message::after {
+        left: 8px;
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+      }
+      
+      .channel-topic {
+        display: none;
+      }
+    }
+  </style>
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      await Notification.requestPermission();
+      
+      const notify = (text) => {
+        if (
+          Notification.permission === "granted" &&
+          (
+            text.includes("@everyone") ||
+            text.includes("--@everyone") ||
+            text.includes("-- @everyone")
+          )
+        ) {
+          new Notification("WEBHOOK NOTIFIED", {
+            body: text.slice(0, 150),
+            silent: false
+          });
+          document.title = "[!] Webhook Feed";
+          
+          // Show notification indicator
+          const indicator = document.querySelector('.notification-indicator');
+          if (indicator) {
+            indicator.style.display = 'block';
+            setTimeout(() => {
+              indicator.style.display = 'none';
+            }, 5000);
+          }
+        }
+      };
+      
+      // Function to format message with Discord-like structure
+      const formatMessage = (messageText) => {
+        const now = new Date();
+        const timestamp = now.toLocaleString('en-US', {
+          month: 'numeric',
+          day: 'numeric',
+          year: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        });
+        
+        // Highlight @everyone mentions
+        let formattedText = messageText.replace(
+          /@everyone|--@everyone|-- @everyone/g, 
+          '<span class="mention">@everyone</span>'
+        );
+        
+        // Enhanced emoji detection and formatting
+        const emojiRegex = /(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/gu;
+        const emojis = formattedText.match(emojiRegex) || [];
+        
+        // Check if message is emoji-only (3 or fewer emojis with minimal text)
+        const textWithoutEmojis = formattedText.replace(emojiRegex, '').trim();
+        const isEmojiOnly = emojis.length <= 3 && textWithoutEmojis.length <= 5;
+        
+        if (isEmojiOnly && emojis.length > 0) {
+          // Large emoji format for emoji-only messages
+          formattedText = formattedText.replace(emojiRegex, '<span class="emoji-large">$1</span>');
+        } else {
+          // Regular emoji format for mixed messages
+          formattedText = formattedText.replace(emojiRegex, '<span class="emoji">$1</span>');
+        }
+        
+        return `<div class="message-header">
+          <span class="message-author">Webhook</span>
+          <span class="message-timestamp">Today at ${timestamp}</span>
+        </div>
+        <div class="message-text">${formattedText}</div>`;
+      };
+      
+      // Function to prepend new message to container
+      const prependMessage = (messageElement) => {
+        const container = document.querySelector('.messages-container');
+        container.insertBefore(messageElement, container.firstChild);
+      };
+      
+      // Initial notification for existing messages
+      document.querySelectorAll(".message").forEach(msg => {
+        const originalText = msg.textContent;
+        msg.innerHTML = formatMessage(originalText);
+        notify(originalText);
+      });
+      
+      // MutationObserver for new messages
+      const observer = new MutationObserver(mutations => {
+        for (const mutation of mutations) {
+          for (const node of mutation.addedNodes) {
+            if (node.classList && node.classList.contains("message")) {
+              const originalText = node.textContent;
+              
+              // Remove the node from its current position
+              node.remove();
+              
+              // Create new message element
+              const newMessage = document.createElement('div');
+              newMessage.className = 'message message-enter';
+              newMessage.innerHTML = formatMessage(originalText);
+              
+              // Prepend to container (add at top)
+              prependMessage(newMessage);
+              
+              notify(originalText);
+            }
+          }
         }
       });
+      observer.observe(document.querySelector('.messages-container'), { childList: true, subtree: true });
+      
+      // Webhook Generator Button
+      const generateBtn = document.getElementById("generateBtn");
+      if (generateBtn) {
+        generateBtn.addEventListener("click", async () => {
+          generateBtn.textContent = 'Generating...';
+          generateBtn.disabled = true;
+          
+          try {
+            const response = await fetch("/generate", { redirect: "follow" });
+            const finalUrl = response.url;
+            const output = document.getElementById("generatedWebhook");
+            const container = document.querySelector('.webhook-output');
+            
+            output.textContent = finalUrl;
+            container.style.display = "block";
+            
+            // Add copy functionality
+            output.addEventListener('click', () => {
+              navigator.clipboard.writeText(finalUrl).then(() => {
+                output.style.background = '#3ba55d';
+                output.style.borderColor = '#57f287';
+                setTimeout(() => {
+                  output.style.background = '#202225';
+                  output.style.borderColor = '#3c3f41';
+                }, 1000);
+              });
+            });
+            
+          } catch (err) {
+            alert("Failed to generate webhook.");
+          } finally {
+            generateBtn.textContent = 'Generate Temp Webhook';
+            generateBtn.disabled = false;
+          }
+        });
+      }
     });
   </script>
 </head>
 <body>
-  <h1>Webhook Feed</h1>
-
-  <!-- Generate Button -->
-  <button id="generateBtn">Generate Temp Webhook</button>
-  <div id="generatedWebhook" style="margin-top: 10px; display: none; font-weight: bold;"></div>
-
-  <!-- Webhook Messages -->
-  {% for msg in messages %}
-    <div class="message">{{ msg.message }}</div>
-  {% endfor %}
+  <div class="notification-indicator">New notification!</div>
+  
+  <div class="discord-header">
+    <div class="channel-info">
+      <span class="channel-icon">#</span>
+      <span class="channel-name">webhook-feed</span>
+      <span class="channel-topic">Real-time webhook monitoring</span>
+    </div>
+    <div class="header-controls">
+      <button id="generateBtn">Generate Temp Webhook</button>
+    </div>
+  </div>
+  
+  <div class="webhook-output">
+    <div id="generatedWebhook" title="Click to copy"></div>
+  </div>
+  
+  <div class="main-content">
+    <div class="messages-container">
+      {% for msg in messages %}
+        <div class="message">
+          <div class="message-content">{{ msg.message }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  
+  <div class="footer">
+    <p>Made By Narukisora | TempWebhook © 2025</p>
+  </div>
 </body>
 </html>
